@@ -34,6 +34,7 @@ export const createProduct = async (req, res, next) => {
         .json({ success: false, message: "All fields are required!" });
     }
     let objDetails = JSON.parse(details);
+    objDetails.price = parseInt(objDetails.price);
     images = imageIds;
     const product = await Product.create({
       title,
@@ -68,4 +69,58 @@ export const getProducts = async (req, res, next) => {
     console.log(err);
     return res.status(500).send("Internal Server Error!");
   }
+};
+
+export const fetchFilteredProducts = async (req, res, next) => {
+  const data = req.body;
+  let { categories, condition, type, maxprice, minprice, location } = data;
+  const selectedLocations = Object.keys(location).filter(
+    (key) => location[key]
+  );
+  const selectedConditions = Object.keys(condition).filter(
+    (key) => condition[key]
+  );
+
+  minprice = parseInt(minprice) || 0;
+  maxprice = parseInt(maxprice) || 10000000;
+  if (categories) {
+    categories = categories.split(",");
+  }
+
+  try {
+    const query = { isActive: true };
+
+    if (categories && categories.length > 0) {
+      query.category = { $in: categories };
+    }
+
+    if (selectedConditions && selectedConditions.length > 0) {
+      query["details.condition"] = { $in: selectedConditions };
+    }
+
+    if (minprice !== undefined && maxprice !== undefined) {
+      query["details.price"] = { $gte: minprice, $lte: maxprice };
+    } else if (minprice !== undefined) {
+      query["details.price"] = { $gte: minprice };
+    } else if (maxprice !== undefined) {
+      query["details.price"] = { $lte: maxprice };
+    }
+
+    if (selectedLocations && selectedLocations.length > 0) {
+      query.location = { $in: selectedLocations };
+    }
+
+    const products = await Product.find(query);
+
+    return res.status(200).json({
+      success: true,
+      products: products,
+      message: "Filtered Products",
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Internal Server Error!");
+  }
+
+  console.log(selectedLocations);
 };

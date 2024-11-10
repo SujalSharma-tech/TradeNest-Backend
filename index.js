@@ -13,14 +13,13 @@ dotenv.config({ path: "./config/config.env" });
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-console.log(process.env.CLOUDINARY_API_KEY);
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLODUINARY_API_SECRET,
   api_secret: process.env.CLODUINARY_API_SECRET,
 });
-
+console.log(process.env.ORIGIN);
 app.use(
   cors({
     origin: [process.env.ORIGIN],
