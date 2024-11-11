@@ -73,13 +73,30 @@ export const getProducts = async (req, res, next) => {
 
 export const fetchFilteredProducts = async (req, res, next) => {
   const data = req.body;
-  let { categories, condition, type, maxprice, minprice, location } = data;
+  let {
+    categories,
+    condition,
+    type,
+    maxprice,
+    minprice,
+    location,
+    searchValue,
+  } = data;
+  console.log(searchValue);
+
+  const labels = {
+    new: "New",
+    gentlyUsed: "Gently Used",
+    heavilyUsed: "Heavily Used",
+  };
+
   const selectedLocations = Object.keys(location).filter(
     (key) => location[key]
   );
-  const selectedConditions = Object.keys(condition).filter(
-    (key) => condition[key]
-  );
+  const selectedConditions = Object.keys(condition)
+    .filter((key) => condition[key])
+    .map((key) => labels[key]);
+  console.log(selectedConditions);
 
   minprice = parseInt(minprice) || 0;
   maxprice = parseInt(maxprice) || 10000000;
@@ -95,7 +112,24 @@ export const fetchFilteredProducts = async (req, res, next) => {
     }
 
     if (selectedConditions && selectedConditions.length > 0) {
+      // query["details.condition"] = {
+      //   $or: selectedConditions.map((condition) => ({
+      //     "details.condition": { $regex: condition, $options: "i" },
+      //   })),
+      // };
+      // query["details.condition"] = {
+      //   $in: selectedConditions.map((condition) => new RegExp(condition, "i")),
+      // };
       query["details.condition"] = { $in: selectedConditions };
+    }
+
+    if (searchValue) {
+      query.$or = [
+        { title: { $regex: searchValue, $options: "i" } },
+        { "details.additionalInfo": { $regex: searchValue, $options: "i" } },
+        { "details.brand": { $regex: searchValue, $options: "i" } },
+        { "details.location": { $regex: searchValue, $options: "i" } },
+      ];
     }
 
     if (minprice !== undefined && maxprice !== undefined) {
@@ -110,6 +144,8 @@ export const fetchFilteredProducts = async (req, res, next) => {
       query.location = { $in: selectedLocations };
     }
 
+    console.log(query);
+
     const products = await Product.find(query);
 
     return res.status(200).json({
@@ -121,6 +157,4 @@ export const fetchFilteredProducts = async (req, res, next) => {
     console.log(err);
     return res.status(500).send("Internal Server Error!");
   }
-
-  console.log(selectedLocations);
 };
